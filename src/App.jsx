@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import AV from './leancloud'
+import AuthScreen from './AuthScreen'
 
 // 豆子角色组件
 const BeanCharacter = ({ mood = 'happy', color = 'pink', decoration = '' }) => {
@@ -23,15 +25,12 @@ const BeanCharacter = ({ mood = 'happy', color = 'pink', decoration = '' }) => {
 
   return (
     <div className="flex justify-center items-center gap-3">
-      {/* 左豆子 */}
       <div className={`relative ${animationClasses[mood]}`}>
         <div className={`w-20 h-20 ${colorClasses[color]} rounded-full flex items-center justify-center text-4xl shadow-lg`}>
           {beanEmojis[mood]}
         </div>
         {decoration && <div className="absolute -top-2 -right-2 text-2xl">{decoration}</div>}
       </div>
-
-      {/* 右豆子 */}
       <div className={`relative ${animationClasses[mood]}`} style={{ animationDelay: '0.3s' }}>
         <div className={`w-20 h-20 ${colorClasses[color === 'pink' ? 'blue' : 'pink']} rounded-full flex items-center justify-center text-4xl shadow-lg`}>
           {beanEmojis[mood]}
@@ -43,8 +42,7 @@ const BeanCharacter = ({ mood = 'happy', color = 'pink', decoration = '' }) => {
 }
 
 // 主界面组件
-const HomeScreen = ({ data, onStartBrushing, onShowProgress }) => {
-  // 检查今天是否已刷牙
+const HomeScreen = ({ data, onStartBrushing, onShowProgress, onLogout, username }) => {
   const getTodayStatus = () => {
     const today = new Date().toDateString()
     const todayRecords = data.records.filter(r => new Date(r).toDateString() === today)
@@ -64,27 +62,36 @@ const HomeScreen = ({ data, onStartBrushing, onShowProgress }) => {
 
   const { morningDone, eveningDone } = getTodayStatus()
 
-  // 本周进度（最近7天内完成次数）
   const getWeekProgress = () => {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
     return data.records.filter(r => new Date(r) >= sevenDaysAgo).length
   }
 
   const weekProgress = getWeekProgress()
-
-  // 确定豆子颜色（基于里程碑）
   const beanColor = data.milestones.color7 ? 'yellow' : 'pink'
   const beanDecoration = data.milestones.decoration21 ? '👑' : ''
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-100 to-pink-100 p-5 pb-8">
       <div className="max-w-md mx-auto">
-        {/* 标题 */}
-        <h1 className="text-center text-3xl font-bold text-purple-600 mb-6 mt-3">
-          Fancy的刷牙时光
-        </h1>
+        {/* 标题和登出 */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-purple-600">
+            Fancy的刷牙时光
+          </h1>
+          <button
+            onClick={onLogout}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-medium active:bg-gray-300"
+          >
+            登出
+          </button>
+        </div>
+
+        {/* 用户名 */}
+        <p className="text-center text-lg text-gray-600 mb-4">
+          你好，{username} 👋
+        </p>
 
         {/* 豆子角色 */}
         <div className="mb-6">
@@ -154,38 +161,31 @@ const BrushingScreen = ({ onComplete, onCancel }) => {
     "就快完成啦！坚持住 🦷✨"
   ]
 
-  // 处理退出点击
   const handleExitClick = () => {
     setShowExitDialog(true)
   }
 
-  // 确认退出
   const handleConfirmExit = () => {
     onCancel()
   }
 
-  // 继续刷牙
   const handleContinue = () => {
     setShowExitDialog(false)
   }
 
   useEffect(() => {
-    // 倒计时
     if (timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
       return () => clearTimeout(timer)
     } else {
-      // 倒计时结束，自动跳转
       setTimeout(onComplete, 500)
     }
   }, [timeLeft, onComplete])
 
   useEffect(() => {
-    // 每20秒切换鼓励文字
     const messageTimer = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % encourageMessages.length)
     }, 20000)
-
     return () => clearInterval(messageTimer)
   }, [])
 
@@ -194,7 +194,6 @@ const BrushingScreen = ({ onComplete, onCancel }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6 flex flex-col items-center justify-center">
       <div className="max-w-md w-full">
-        {/* 退出按钮 */}
         <div className="text-right mb-4">
           <button
             onClick={handleExitClick}
@@ -204,20 +203,15 @@ const BrushingScreen = ({ onComplete, onCancel }) => {
           </button>
         </div>
 
-        {/* 豆子陪伴 */}
         <div className="mb-8">
           <BeanCharacter mood="jumping" />
         </div>
 
-        {/* 倒计时显示 */}
         <div className="text-center mb-8">
-          <div className="text-7xl font-bold text-blue-600 mb-4">
-            {timeLeft}
-          </div>
+          <div className="text-7xl font-bold text-blue-600 mb-4">{timeLeft}</div>
           <div className="text-2xl text-gray-700">秒</div>
         </div>
 
-        {/* 能量条 */}
         <div className="mb-8">
           <div className="w-full h-12 bg-white rounded-full overflow-hidden shadow-lg">
             <div
@@ -231,7 +225,6 @@ const BrushingScreen = ({ onComplete, onCancel }) => {
           </div>
         </div>
 
-        {/* 鼓励文字 */}
         <div className="bg-white rounded-3xl p-6 shadow-lg">
           <p className="text-3xl text-center font-semibold text-gray-800 animate-bounce-in" key={messageIndex}>
             {encourageMessages[messageIndex]}
@@ -239,16 +232,12 @@ const BrushingScreen = ({ onComplete, onCancel }) => {
         </div>
       </div>
 
-      {/* 退出确认对话框 */}
       {showExitDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full animate-bounce-in">
-            {/* 豆子表情 */}
             <div className="text-center mb-6">
               <div className="text-7xl">🥺</div>
             </div>
-
-            {/* 挽留文字 */}
             <h3 className="text-2xl font-bold text-center text-gray-800 mb-4">
               要离开了吗？
             </h3>
@@ -256,8 +245,6 @@ const BrushingScreen = ({ onComplete, onCancel }) => {
               豆子还想陪你一起刷完呢<br />
               就快完成了 💕
             </p>
-
-            {/* 按钮组 */}
             <div className="space-y-3">
               <button
                 onClick={handleContinue}
@@ -284,42 +271,27 @@ const CelebrationScreen = ({ onReturn, milestone }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-100 to-pink-100 p-6 flex flex-col items-center justify-center">
       <div className="max-w-md w-full text-center">
-        {/* 豆子庆祝 */}
         <div className="mb-8">
           <BeanCharacter mood="celebrating" />
         </div>
 
-        {/* 奖励显示 */}
         <div className="bg-white rounded-3xl p-8 mb-8 shadow-2xl animate-bounce-in">
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-4xl font-bold text-purple-600 mb-4">
-            太棒啦！
-          </h2>
+          <h2 className="text-4xl font-bold text-purple-600 mb-4">太棒啦！</h2>
           <div className="text-5xl mb-4">⭐️ +1</div>
-          <p className="text-xl text-gray-600">
-            又获得了一颗星星
-          </p>
+          <p className="text-xl text-gray-600">又获得了一颗星星</p>
         </div>
 
-        {/* 里程碑提示 */}
         {milestone && (
           <div className="bg-gradient-to-r from-purple-400 to-pink-400 rounded-3xl p-6 mb-8 shadow-xl animate-bounce-in">
             <div className="text-5xl mb-3">{milestone.icon}</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              {milestone.title}
-            </h3>
-            <p className="text-xl text-white">
-              {milestone.message}
-            </p>
+            <h3 className="text-2xl font-bold text-white mb-2">{milestone.title}</h3>
+            <p className="text-xl text-white">{milestone.message}</p>
           </div>
         )}
 
-        {/* 感谢文字 */}
-        <p className="text-xl text-gray-600 mb-8">
-          豆子为你感到骄傲 💕
-        </p>
+        <p className="text-xl text-gray-600 mb-8">豆子为你感到骄傲 💕</p>
 
-        {/* 返回按钮 */}
         <button
           onClick={onReturn}
           className="w-full py-6 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-3xl text-3xl font-bold shadow-lg active:scale-95"
@@ -334,7 +306,6 @@ const CelebrationScreen = ({ onReturn, milestone }) => {
 
 // 进度日历组件
 const ProgressCalendar = ({ records, onClose }) => {
-  // 获取最近7天
   const getLast7Days = () => {
     const days = []
     for (let i = 6; i >= 0; i--) {
@@ -347,7 +318,6 @@ const ProgressCalendar = ({ records, onClose }) => {
 
   const last7Days = getLast7Days()
 
-  // 检查某天的刷牙记录
   const getDayRecords = (date) => {
     const dateStr = date.toDateString()
     return records.filter(r => new Date(r).toDateString() === dateStr)
@@ -356,9 +326,7 @@ const ProgressCalendar = ({ records, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
       <div className="bg-white rounded-3xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
-        <h2 className="text-3xl font-bold text-center text-purple-600 mb-6">
-          打卡日历 📅
-        </h2>
+        <h2 className="text-3xl font-bold text-center text-purple-600 mb-6">打卡日历 📅</h2>
 
         <div className="space-y-3 mb-6">
           {last7Days.map((date, index) => {
@@ -418,35 +386,113 @@ const ProgressCalendar = ({ records, onClose }) => {
 
 // 主应用组件
 function App() {
-  const [screen, setScreen] = useState('home') // home, brushing, celebration
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [screen, setScreen] = useState('home')
   const [showProgress, setShowProgress] = useState(false)
   const [milestone, setMilestone] = useState(null)
-
-  // 从localStorage加载数据
-  const loadData = () => {
-    const savedData = localStorage.getItem('toothBrushingData')
-    if (savedData) {
-      return JSON.parse(savedData)
+  const [data, setData] = useState({
+    records: [],
+    stars: 0,
+    streakDays: 0,
+    milestones: {
+      color7: false,
+      story14: false,
+      decoration21: false,
+      special30: false
     }
-    return {
-      records: [], // 刷牙记录时间戳数组
-      stars: 0, // 累积星星数
-      streakDays: 0, // 连续打卡天数
+  })
+
+  // 检查登录状态
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = AV.User.current()
+      if (user) {
+        setCurrentUser(user)
+        setIsAuthenticated(true)
+        await loadData(user)
+      }
+      setLoading(false)
+    }
+    checkAuth()
+  }, [])
+
+  // 从 LeanCloud 加载数据
+  const loadData = async (user) => {
+    try {
+      const query = new AV.Query('BrushingData')
+      query.equalTo('user', user)
+      const result = await query.first()
+
+      if (result) {
+        setData({
+          records: result.get('records') || [],
+          stars: result.get('stars') || 0,
+          streakDays: result.get('streakDays') || 0,
+          milestones: result.get('milestones') || {
+            color7: false,
+            story14: false,
+            decoration21: false,
+            special30: false
+          }
+        })
+      }
+    } catch (error) {
+      console.error('加载数据失败:', error)
+    }
+  }
+
+  // 保存数据到 LeanCloud
+  const saveData = async (newData) => {
+    try {
+      const user = AV.User.current()
+      const query = new AV.Query('BrushingData')
+      query.equalTo('user', user)
+      let brushingData = await query.first()
+
+      if (!brushingData) {
+        brushingData = new AV.Object('BrushingData')
+        brushingData.set('user', user)
+      }
+
+      brushingData.set('records', newData.records)
+      brushingData.set('stars', newData.stars)
+      brushingData.set('streakDays', newData.streakDays)
+      brushingData.set('milestones', newData.milestones)
+
+      await brushingData.save()
+      setData(newData)
+    } catch (error) {
+      console.error('保存数据失败:', error)
+    }
+  }
+
+  // 登录成功
+  const handleLoginSuccess = async () => {
+    const user = AV.User.current()
+    setCurrentUser(user)
+    setIsAuthenticated(true)
+    await loadData(user)
+  }
+
+  // 登出
+  const handleLogout = async () => {
+    await AV.User.logOut()
+    setCurrentUser(null)
+    setIsAuthenticated(false)
+    setData({
+      records: [],
+      stars: 0,
+      streakDays: 0,
       milestones: {
         color7: false,
         story14: false,
         decoration21: false,
         special30: false
       }
-    }
+    })
   }
-
-  const [data, setData] = useState(loadData())
-
-  // 保存数据到localStorage
-  useEffect(() => {
-    localStorage.setItem('toothBrushingData', JSON.stringify(data))
-  }, [data])
 
   // 计算连续打卡天数
   const calculateStreak = (records) => {
@@ -468,7 +514,7 @@ function App() {
       }
     }
 
-    return Math.ceil(streak / 2) // 两次刷牙算一天
+    return Math.ceil(streak / 2)
   }
 
   // 检查里程碑
@@ -476,7 +522,6 @@ function App() {
     const newMilestones = { ...currentMilestones }
     let achievedMilestone = null
 
-    // 7天里程碑 - 豆子换颜色
     if (totalRecords >= 14 && !newMilestones.color7) {
       newMilestones.color7 = true
       achievedMilestone = {
@@ -484,27 +529,21 @@ function App() {
         title: '7天里程碑',
         message: '豆子换了新颜色！'
       }
-    }
-    // 14天里程碑 - 小故事
-    else if (totalRecords >= 28 && !newMilestones.story14) {
+    } else if (totalRecords >= 28 && !newMilestones.story14) {
       newMilestones.story14 = true
       achievedMilestone = {
         icon: '📖',
         title: '14天里程碑',
         message: '豆子说：坚持刷牙让我的牙齿又白又亮，细菌都不敢来找我玩啦！'
       }
-    }
-    // 21天里程碑 - 加装饰
-    else if (totalRecords >= 42 && !newMilestones.decoration21) {
+    } else if (totalRecords >= 42 && !newMilestones.decoration21) {
       newMilestones.decoration21 = true
       achievedMilestone = {
         icon: '👑',
         title: '21天里程碑',
         message: '豆子获得了王冠装饰！'
       }
-    }
-    // 30天里程碑 - 特殊庆祝
-    else if (totalRecords >= 60 && !newMilestones.special30) {
+    } else if (totalRecords >= 60 && !newMilestones.special30) {
       newMilestones.special30 = true
       achievedMilestone = {
         icon: '🏆',
@@ -518,8 +557,6 @@ function App() {
 
   // 开始刷牙
   const handleStartBrushing = () => {
-    // 注：为了方便体验，暂时移除了时间限制
-    // 原本只能在早上6-12点或晚上18-24点刷牙
     setScreen('brushing')
   }
 
@@ -529,22 +566,22 @@ function App() {
   }
 
   // 完成刷牙
-  const handleCompleteBrushing = () => {
+  const handleCompleteBrushing = async () => {
     const now = new Date().toISOString()
     const newRecords = [...data.records, now]
     const newStars = data.stars + 1
     const newStreak = calculateStreak(newRecords)
 
-    // 检查里程碑
     const { newMilestones, achievedMilestone } = checkMilestones(newRecords.length, data.milestones)
 
-    setData({
+    const newData = {
       records: newRecords,
       stars: newStars,
       streakDays: newStreak,
       milestones: newMilestones
-    })
+    }
 
+    await saveData(newData)
     setMilestone(achievedMilestone)
     setScreen('celebration')
   }
@@ -555,6 +592,18 @@ function App() {
     setScreen('home')
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-yellow-100 to-pink-100 flex items-center justify-center">
+        <div className="text-2xl text-purple-600 font-bold">加载中...</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />
+  }
+
   return (
     <>
       {screen === 'home' && (
@@ -562,6 +611,8 @@ function App() {
           data={data}
           onStartBrushing={handleStartBrushing}
           onShowProgress={() => setShowProgress(true)}
+          onLogout={handleLogout}
+          username={currentUser?.getUsername()}
         />
       )}
 
