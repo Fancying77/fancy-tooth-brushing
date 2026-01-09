@@ -1,11 +1,12 @@
 {
   "name": "fancy-tooth-brushing",
   "version": "1.0.0",
+  "type": "module",
   "description": "儿童刷牙习惯养成应用",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview"  
   },
   "dependencies": {
     "react": "^18.2.0",
