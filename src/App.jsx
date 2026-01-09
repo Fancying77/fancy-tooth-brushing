@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import AV from './leancloud'
 import AuthScreen from './AuthScreen'
+import Timeline from './Timeline'
 
 // 豆子角色组件
 const BeanCharacter = ({ mood = 'happy', color = 'pink', decoration = '' }) => {
@@ -77,9 +78,9 @@ const HomeScreen = ({ data, onStartBrushing, onShowProgress, onLogout, username 
       <div className="max-w-md mx-auto">
         {/* 标题和登出 */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold text-purple-600">
-            Fancy的刷牙时光
-          </h1>
+        <h1 className="text-3xl font-bold text-purple-600">
+        Fancy&图图的刷牙时光
+        </h1>
           <button
             onClick={onLogout}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-medium active:bg-gray-300"
@@ -137,6 +138,10 @@ const HomeScreen = ({ data, onStartBrushing, onShowProgress, onLogout, username 
           </button>
         </div>
 
+         {/* 时间线 */}
+        <div className="mb-6">
+          <Timeline />
+        </div>
         {/* 开始刷牙按钮 */}
         <button
           onClick={onStartBrushing}
