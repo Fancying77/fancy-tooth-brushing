@@ -137,18 +137,18 @@ const HomeScreen = ({ data, onStartBrushing, onShowProgress, onLogout, username 
             查看日历
           </button>
         </div>
-
-         {/* 时间线 */}
-        <div className="mb-6">
-          <Timeline />
-        </div>
-        {/* 开始刷牙按钮 */}
+       {/* 开始刷牙按钮 */}
         <button
           onClick={onStartBrushing}
           className="w-full py-7 rounded-3xl text-2xl font-bold shadow-2xl transition-all bg-gradient-to-r from-green-400 to-blue-500 text-white active:scale-95"
         >
           和豆子一起刷牙 🦷
         </button>
+
+        {/* 时间线 */}
+        <div className="mt-6">
+          <Timeline />
+        </div>
       </div>
     </div>
   )
